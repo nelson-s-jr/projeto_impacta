@@ -146,7 +146,7 @@ class ConsultaFilmesApp:
 
         self.resultado_texto.delete(1.0, tk.END)  # Limpa resultados anteriores
         for resultado in resultados:
-            self.resultado_texto.insert(tk.END, f"Nome: {resultado[0]}, Ano: {resultado[1]}, Gênero: {resultado[2]}, Data Assistido: {resultado[3]}, Produção: {resultado[4]}\n")
+            self.resultado_texto.insert(tk.END, f"Nome: {resultado[0]}\nAno: {resultado[1]}\nGênero: {resultado[2]}\nData Assistido: {resultado[3]}\nProdução: {resultado[4]}\n\n")
 
         cursor.close()
         conn.close()
