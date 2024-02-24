@@ -42,6 +42,9 @@ class FilmesApp:
         button_salvar = tk.Button(root, text="Salvar Filme", command=self.salvar_filme)
         button_salvar.grid(row=5, column=0, columnspan=2, padx=10, pady=(18, 8), sticky="we")
 
+        button_consultar = tk.Button(root, text="Consultar Filmes", command=self.consultar_filmes)
+        button_consultar.grid(row=6, column=0, columnspan=2, padx=10, pady=(18, 8), sticky="we")
+
         # Configurando o redimensionamento dinâmico dos elementos
         root.grid_rowconfigure(5, weight=1)
         root.grid_columnconfigure(0, weight=1)
@@ -89,6 +92,66 @@ class FilmesApp:
         else:
             self.root.destroy()
 
+    def consultar_filmes(self):
+        consulta_window = ConsultaFilmesApp(self.root)
+
+
+class ConsultaFilmesApp:
+    def __init__(self, root):
+        self.root = root
+        self.consulta_window = tk.Toplevel(root)
+        self.consulta_window.title("Consulta de Filmes")
+
+        # Elementos da interface para consulta
+        label_inicio = tk.Label(self.consulta_window, text="Data de início:")
+        label_inicio.grid(row=0, column=0, padx=10, pady=5)
+        self.entry_inicio = DateEntry(self.consulta_window, width=12, background='darkblue', foreground='white', borderwidth=2)
+        self.entry_inicio.grid(row=0, column=1, padx=10, pady=5)
+
+        label_fim = tk.Label(self.consulta_window, text="Data de fim:")
+        label_fim.grid(row=1, column=0, padx=10, pady=5)
+        self.entry_fim = DateEntry(self.consulta_window, width=12, background='darkblue', foreground='white', borderwidth=2)
+        self.entry_fim.grid(row=1, column=1, padx=10, pady=5)
+
+        label_nome_filme = tk.Label(self.consulta_window, text="Nome do Filme:")
+        label_nome_filme.grid(row=2, column=0, padx=10, pady=5)
+        self.entry_nome_filme = tk.Entry(self.consulta_window)
+        self.entry_nome_filme.grid(row=2, column=1, padx=10, pady=5)
+
+        button_consultar = tk.Button(self.consulta_window, text="Consultar", command=self.realizar_consulta)
+        button_consultar.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky="we")
+
+        self.resultado_texto = tk.Text(self.consulta_window, height=10, width=50)
+        self.resultado_texto.grid(row=4, column=0, columnspan=2, padx=10, pady=5)
+
+    def realizar_consulta(self):
+        data_inicio = self.entry_inicio.get_date().strftime('%Y-%m-%d')
+        data_fim = self.entry_fim.get_date().strftime('%Y-%m-%d')
+        nome_filme = self.entry_nome_filme.get()
+
+        conn = pyodbc.connect('DRIVER={SQL Server};'
+                            'SERVER=localhost\SQLEXPRESS;'
+                            'DATABASE=master;'
+                            'Trusted_Connection=yes;')
+        cursor = conn.cursor()
+
+        if nome_filme:
+            cursor.execute("SELECT NomeFilme, AnoEstreia, Genero, DataAssistido, TipoProducao FROM Filmes WHERE UserID=? AND DataAssistido BETWEEN ? AND ? AND NomeFilme LIKE ?",
+                           (user_id, data_inicio, data_fim, f'%{nome_filme}%'))
+        else:
+            cursor.execute("SELECT NomeFilme, AnoEstreia, Genero, DataAssistido, TipoProducao FROM Filmes WHERE UserID=? AND DataAssistido BETWEEN ? AND ?",
+                           (user_id, data_inicio, data_fim))
+
+        resultados = cursor.fetchall()
+
+        self.resultado_texto.delete(1.0, tk.END)  # Limpa resultados anteriores
+        for resultado in resultados:
+            self.resultado_texto.insert(tk.END, f"Nome: {resultado[0]}, Ano: {resultado[1]}, Gênero: {resultado[2]}, Data Assistido: {resultado[3]}, Produção: {resultado[4]}\n")
+
+        cursor.close()
+        conn.close()
+
+
 
 class LoginApp:
     def __init__(self, root):
@@ -129,7 +192,7 @@ class LoginApp:
         cursor = conn.cursor()
 
         # Consulta o banco de dados para verificar se o usuário e a senha estão corretos
-        cursor.execute("SELECT UserID FROM Usuarios WHERE Username=? AND Password=?", (username, password))
+        cursor.execute("SELECT UserID FROM Usuarios WHERE Username COLLATE SQL_Latin1_General_CP1_CS_AS = ? AND Password = ?", (username, password))
         row = cursor.fetchone()
 
         if row:
