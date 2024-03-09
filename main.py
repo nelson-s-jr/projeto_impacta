@@ -3,6 +3,7 @@ from tkinter import messagebox
 from tkinter import ttk
 import pyodbc
 from tkcalendar import DateEntry
+import datetime
 
 
 class FilmesApp:
@@ -121,8 +122,21 @@ class ConsultaFilmesApp:
         button_consultar = tk.Button(self.consulta_window, text="Consultar", command=self.realizar_consulta)
         button_consultar.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky="we")
 
-        self.resultado_texto = tk.Text(self.consulta_window, height=10, width=50)
-        self.resultado_texto.grid(row=4, column=0, columnspan=2, padx=10, pady=5)
+        self.tree = ttk.Treeview(self.consulta_window)
+        self.tree["columns"] = ("Nome", "Ano", "Gênero", "Data Assistido", "Produção")
+        self.tree.grid(row=4, column=0, columnspan=2, padx=10, pady=5)
+        self.tree.heading("#0", text="")
+        self.tree.column("#0", width=0, stretch=tk.NO)
+        self.tree.heading("Nome", text="Nome")
+        self.tree.heading("Ano", text="Ano")
+        self.tree.heading("Gênero", text="Gênero")
+        self.tree.heading("Data Assistido", text="Data Assistido")
+        self.tree.heading("Produção", text="Produção")
+
+    def formatar_data(self, data):
+        # Formatar data para o padrão brasileiro (dd/mm/aaaa)
+        data_datetime = datetime.datetime.strptime(data, '%Y-%m-%d')
+        return data_datetime.strftime('%d/%m/%Y')
 
     def realizar_consulta(self):
         data_inicio = self.entry_inicio.get_date().strftime('%Y-%m-%d')
@@ -144,9 +158,12 @@ class ConsultaFilmesApp:
 
         resultados = cursor.fetchall()
 
-        self.resultado_texto.delete(1.0, tk.END)  # Limpa resultados anteriores
+        # Limpa resultados anteriores
+        self.tree.delete(*self.tree.get_children())
+
         for resultado in resultados:
-            self.resultado_texto.insert(tk.END, f"Nome: {resultado[0]}\nAno: {resultado[1]}\nGênero: {resultado[2]}\nData Assistido: {resultado[3]}\nProdução: {resultado[4]}\n\n")
+            data_formatada = self.formatar_data(resultado[3])
+            self.tree.insert("", "end", values=(resultado[0], resultado[1], resultado[2], data_formatada, resultado[4]))
 
         cursor.close()
         conn.close()
